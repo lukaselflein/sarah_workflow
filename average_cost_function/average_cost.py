@@ -6,6 +6,7 @@ Author: Lukas Elflein <elfleinl@cs.uni-freiburg.de>
 
 import numpy as np
 import h5py
+#import sysutil
 
 # We want to average over cost functions.
 # These cost functions contain the three objects of the cost function: A, B, C
@@ -16,7 +17,7 @@ import h5py
 # This script averages over A and B, and outputs a HDF5 file containing these averaged objects.
 # Later, these files will be used to obtain corresponding charges.
 
-def read_h5(timesteps):
+def read_h5(work_dir, timesteps):
 	"""
 	Import cost functions.
 	"""
@@ -28,13 +29,22 @@ def read_h5(timesteps):
 	# The corresponding B vectors
 	B_vectors = dict()
 
+	# keep one HDF5 file as a template for writing into later
+	template = False
 
 	# Extract the values for each timestep
 	for timestep in timesteps:
+		# build the path to the raw data
+		sys_path = work_dir + '/' + timestep + 'ps'
+		# go down into the subdir
+		sys_path += '/smampppp_' + timestep + 'ps_new_constrains'
 		# build the filename
 		filename = 'system' + timestep + '.cost.lnrhoref.-9.h5'
+		path = sys_path + '/' + filename
+		print('loading: {}'.format(path))
+		
 		# load the objects (read-only) from HDF5 file
-		f = h5py.File(filename, 'r')
+		f = h5py.File(path, 'r')
 		# Extract the A matrix
 		A = np.array(f['cost']['A'])
 		A_matrices[timestep] = A
@@ -42,11 +52,14 @@ def read_h5(timesteps):
 		B = np.array(f['cost']['B'])
 		B_vectors[timestep] = B
 
-	return(A_matrices, B_vectors)
+		if not template:
+	#		sysutil.copyfile(path, './average_cost.h5')
+			template = True
+
+	return A_matrices, B_vectors
 
 def average(A_matrices, B_vectors, timesteps):
-	"""
-	Average over matrices
+	""" Average over matrices
 	"""
 
 	# Initialize empty
@@ -64,12 +77,28 @@ def average(A_matrices, B_vectors, timesteps):
 	A /= number_snapshots
 	B /= number_snapshots
 
-	return(A, B)
+	return A, B
+
+def export(A, B):
+	""" Export&save numpy-matrices to HDF5 objects
+	"""
+	f = h5py.File('./average_cost.h5', 'r+')      # open the file
+	A_old = f['cost/A']     	      # load the data
+	A_old[...] = A      # assign new values to dat
+	B_old = f['cost/B']
+	B_old[...] = B
+	f.close() 
+
+	f = h5py.File('./average_cost.h5', 'r')
+	print('Data has been written: \nA {}'.format(np.allclose(f['cost/A'].value, A)))
+	print('B {}'.format(np.allclose(f['cost/B'].value, B)))
 
 
 if __name__ == '__main__':
-
-	timesteps = ('300', '600')
-	A_matrices, B_vectors = read_h5(timesteps)
-	A, B = average(A_matrices, B_vectors, timesteps)
+	WORK_DIR = '/work/ws/nemo/fr_jh1130-smamp_shared-0/for_lukas'
+	TIMESTEPS = [str(time) for time in range(100, 1000, 100)] 
+	A_matrices, B_vectors = read_h5(work_dir=WORK_DIR, timesteps=TIMESTEPS)
+	A, B = average(A_matrices, B_vectors, timesteps=TIMESTEPS)
 	print(A[:10, :10], B[:10])
+
+	export(A, B)
