@@ -120,13 +120,14 @@ def cmd_parser():
 	parser = argparse.ArgumentParser(prog='',
 					 description='Transfer charges from a csv file to an .rtp file')
 	parser.add_argument('-rtp',
-        help='The location of the GROMACS topology file (.rtp) in the form "./path/to/file.rtp" or "/home/username/path/to/file.rtp".', default='./n7nh2.rtp')
+        help='The location of the GROMACS topology file (.rtp)',
+	default='./n7nh2.rtp', metavar='./n7nh2.rtp')
 
-	parser.add_argument('-csv',
+	parser.add_argument('-csv', metavar='./charges.csv',
         help='The location of the atomname-charge table, in the .csv format.', 
 	default='./average_cost_function_check/fitted_points_charges.csv')
 	
-	parser.add_argument('-out',
+	parser.add_argument('-out', metavar='./modified.rtp',
         help='The location where the modified rtp file should be saved.',
 	default='modified.rtp')
 
