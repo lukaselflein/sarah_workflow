@@ -1,4 +1,4 @@
-""" Average Cost Functions for Horton to determine Charges for Molecular Dynamics 
+""" Average Cost Functions for Horton to determine Charges for Molecular Dynamics.
 Copyright 2019 Simulation Lab
 University of Freiburg
 Author: Lukas Elflein <elfleinl@cs.uni-freiburg.de>
@@ -6,7 +6,7 @@ Author: Lukas Elflein <elfleinl@cs.uni-freiburg.de>
 
 import numpy as np
 import h5py
-import sysutil
+import shutil
 
 # We want to average over cost functions.
 # These cost functions contain the three objects of the cost function: A, B, C
@@ -20,7 +20,16 @@ import sysutil
 def read_h5(work_dir, timesteps):
 	"""
 	Import cost functions.
+
+	Arguments:
+	work_dir: the top-level directory the data is located in.
+	timesteps: timestep labels of the snapshot subfolders in the work_dir.
+
+	Returns:
+	A_matrices: a dictionary of matrices, indexed by their timestep.
+	B_vectors: a dictionary of vectors, indexed by their timestep.
 	"""
+
 	# Define the names and places of the HDF5 files that HORTON outputs.
 	files = ['system300.cost.lnrhoref.-9.h5', 'system600.cost.lnrhoref.-9.h5']
 
@@ -33,6 +42,7 @@ def read_h5(work_dir, timesteps):
 	template = False
 
 	# Extract the values for each timestep
+	print('loading data:')
 	for timestep in timesteps:
 		# build the path to the raw data
 		sys_path = work_dir + '/' + timestep + 'ps'
@@ -50,7 +60,7 @@ def read_h5(work_dir, timesteps):
 			filename = 'system' + timestep + '.cost.lnrhoref.-9.h5'
 
 		path = sys_path + '/' + filename
-		print('loading: {}'.format(path))
+		print(path, '... Done')
 		
 		# load the objects (read-only) from HDF5 file
 		f = h5py.File(path, 'r')
@@ -62,13 +72,23 @@ def read_h5(work_dir, timesteps):
 		B_vectors[timestep] = B
 
 		if not template:
-			sysutil.copyfile(path, './average_cost.h5')
+			shutil.copyfile(path, './average_cost.h5')
 			template = True
 
 	return A_matrices, B_vectors
 
 def average(A_matrices, B_vectors, timesteps):
-	""" Average over matrices
+	""" 
+	Average over matrices.
+
+	Arguments:
+	A_matrices: a dictionary of NxN matrices, indexed with their timestep.
+	B_vectors: a dictionary of vectors with len N, indexed with their timestep.
+	timesteps: a list or tuple of timesteps.
+
+	Returns:
+	A: the average of all A_matrices.
+	B: the average of all B_matrices.
 	"""
 
 	# Initialize empty
@@ -89,7 +109,15 @@ def average(A_matrices, B_vectors, timesteps):
 	return A, B
 
 def export(A, B, template_path='./average_cost.h5'):
-	""" Export&save numpy-matrices to HDF5 objects
+	"""
+	Export&save numpy-matrices to HDF5 objects.
+	
+	Arguments:
+	A: Averaged A-matrix.
+	B: Averaged B-vector.
+
+	Keyword Arguments:
+	template_path: the path to the template file A and B are written into.
 	"""
 	# Open the template file
 	f = h5py.File(template_path, 'r+')
@@ -103,21 +131,29 @@ def export(A, B, template_path='./average_cost.h5'):
 	# Save changes
 	f.close() 
 
-	# Make sure that the changes were written
+	# Make sure that the changes were written into the template
 	f = h5py.File(template_path, 'r')
-	print('Data has been written to {}:'.format(template_path))
-	print('A {}'.format(np.allclose(f['cost/A'].value, A)))
-	print('B {}'.format(np.allclose(f['cost/B'].value, B)))
+	assert np.allclose(f['cost/A'][()], A)
+	assert np.allclose(f['cost/B'][()], B)
 
+	print('\nData has been written to {}:'.format(template_path))
 
-if __name__ == '__main__':
+def main():
+	"""
+	Run the script.
+	"""
 	# Uncomment to define an absolute working dir path
 	# WORK_DIR = '/work/ws/nemo/fr_jh1130-smamp_shared-0/for_lukas'
 	# The WORK_DIR is the top-level directory, all timesteps are subfolders here
-	WORK_DIR = './'
+	WORK_DIR = '.'
 	TIMESTEPS = [str(time) for time in range(100, 1100, 100)] 
 	A_matrices, B_vectors = read_h5(work_dir=WORK_DIR, timesteps=TIMESTEPS)
-	A, B = average(A_matrices, B_vectors, timesteps=TIMESTEPS)
-	print(A[:10, :10], B[:10])
 
+	print('Calculating averages')
+	A, B = average(A_matrices, B_vectors, timesteps=TIMESTEPS)
+	
 	export(A, B)
+	print('Done.')
+
+if __name__ == '__main__':
+	main()
