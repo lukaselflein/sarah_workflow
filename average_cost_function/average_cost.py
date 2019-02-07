@@ -40,6 +40,15 @@ def read_h5(work_dir, timesteps):
 		sys_path += '/smampppp_' + timestep + 'ps_new_constrains'
 		# build the filename
 		filename = 'system' + timestep + '.cost.lnrhoref.-9.h5'
+
+		# special case:	1000ps are saved as 1ns
+		if timestep == '1000':
+			sys_path = work_dir + '/' + timestep + 'ps'
+			# go down into the subdir
+			sys_path += '/smampppp_' + timestep + 'ps_new_constrains'
+			# build the filename
+			filename = 'system' + timestep + '.cost.lnrhoref.-9.h5'
+
 		path = sys_path + '/' + filename
 		print('loading: {}'.format(path))
 		
@@ -53,7 +62,7 @@ def read_h5(work_dir, timesteps):
 		B_vectors[timestep] = B
 
 		if not template:
-	#		sysutil.copyfile(path, './average_cost.h5')
+			sysutil.copyfile(path, './average_cost.h5')
 			template = True
 
 	return A_matrices, B_vectors
@@ -79,24 +88,34 @@ def average(A_matrices, B_vectors, timesteps):
 
 	return A, B
 
-def export(A, B):
+def export(A, B, template_path='./average_cost.h5'):
 	""" Export&save numpy-matrices to HDF5 objects
 	"""
-	f = h5py.File('./average_cost.h5', 'r+')      # open the file
-	A_old = f['cost/A']     	      # load the data
-	A_old[...] = A      # assign new values to dat
+	# Open the template file
+	f = h5py.File(template_path, 'r+')
+	# Load the template A matrix
+	A_old = f['cost/A']
+	# Assign the averaged A
+	A_old[...] = A
+	# Do the same for the B-vectors
 	B_old = f['cost/B']
 	B_old[...] = B
+	# Save changes
 	f.close() 
 
-	f = h5py.File('./average_cost.h5', 'r')
-	print('Data has been written: \nA {}'.format(np.allclose(f['cost/A'].value, A)))
+	# Make sure that the changes were written
+	f = h5py.File(template_path, 'r')
+	print('Data has been written to {}:'.format(template_path)
+	print('A {}'.format(np.allclose(f['cost/A'].value, A)))
 	print('B {}'.format(np.allclose(f['cost/B'].value, B)))
 
 
 if __name__ == '__main__':
-	WORK_DIR = '/work/ws/nemo/fr_jh1130-smamp_shared-0/for_lukas'
-	TIMESTEPS = [str(time) for time in range(100, 1000, 100)] 
+	# Uncomment to define an absolute working dir path
+	# WORK_DIR = '/work/ws/nemo/fr_jh1130-smamp_shared-0/for_lukas'
+	# The WORK_DIR is the top-level directory, all timesteps are subfolders here
+	WORK_DIR = './'
+	TIMESTEPS = [str(time) for time in range(100, 1100, 100)] 
 	A_matrices, B_vectors = read_h5(work_dir=WORK_DIR, timesteps=TIMESTEPS)
 	A, B = average(A_matrices, B_vectors, timesteps=TIMESTEPS)
 	print(A[:10, :10], B[:10])
