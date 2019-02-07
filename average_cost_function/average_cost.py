@@ -105,7 +105,7 @@ def export(A, B, template_path='./average_cost.h5'):
 
 	# Make sure that the changes were written
 	f = h5py.File(template_path, 'r')
-	print('Data has been written to {}:'.format(template_path)
+	print('Data has been written to {}:'.format(template_path))
 	print('A {}'.format(np.allclose(f['cost/A'].value, A)))
 	print('B {}'.format(np.allclose(f['cost/B'].value, B)))
 
