@@ -6,7 +6,7 @@ Author: Lukas Elflein <elfleinl@cs.uni-freiburg.de>
 
 import numpy as np
 import h5py
-#import sysutil
+import sysutil
 
 # We want to average over cost functions.
 # These cost functions contain the three objects of the cost function: A, B, C
