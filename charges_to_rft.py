@@ -107,7 +107,7 @@ def substitute(line, charges, current_residuum):
 
 	return modified_line
 
-def export_rft(text, path='modified.rtf'):
+def export_rft(text, path='modified.rtp'):
 	"""
 	Write the modified text to file.
 	"""
