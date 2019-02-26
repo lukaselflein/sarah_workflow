@@ -1,4 +1,4 @@
-""" Transfer Charges from CSV table to .rft file
+""" Transfer Charges from CSV table to .rtp file
 Copyright 2019 Simulation Lab
 University of Freiburg
 Author: Lukas Elflein <elfleinl@cs.uni-freiburg.de>
